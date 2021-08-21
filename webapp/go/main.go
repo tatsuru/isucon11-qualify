@@ -79,6 +79,7 @@ type IsuWithLastCondition struct {
 	CreatedAt  time.Time `db:"created_at" json:"-"`
 	UpdatedAt  time.Time `db:"updated_at" json:"-"`
 
+
 	LastConditionTimestamp time.Time `db:"last_condition_timestamp" json:"-"`
 	LastConditionLevel     string    `db:"last_condition_level" json:"-"`
 }
@@ -1273,7 +1274,11 @@ func getTrend(c echo.Context) error {
 		for _, character := range characterList {
 			isuList := []IsuWithLastCondition{}
 			err = db.Select(&isuList,
-				"SELECT `isu`.*, `isu_condition`.`timestamp` as `last_condition_timestamp`, `isu_condition`.`condition_level` as `last_condition_level` FROM `isu` INNER JOIN `isu_condition` ON `isu`.`last_condition_id` = `isu_condition`.`id` WHERE `character` = ?",
+				"SELECT `isu`.*,"+
+					" `isu_condition`.`timestamp` as `last_condition_timestamp`, "+
+					" `isu_condition`.`condition_level` as `last_condition_level` "+
+					" FROM `isu` INNER JOIN `isu_condition` ON `isu`.`last_condition_id` = `isu_condition`.`id` "+
+					" WHERE `character` = ?",
 				character.Character,
 			)
 			if err != nil {
