@@ -846,10 +846,7 @@ func getIsuIcon(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	var image []byte
-	image, err = ioutil.ReadFile("/home/isucon/image/" + jiaIsuUUID + "/icon")
-
-	return c.Blob(http.StatusOK, "", image)
+	return c.File("/home/isucon/image/" + jiaIsuUUID + "/icon")
 }
 
 // GET /api/isu/:jia_isu_uuid/graph
