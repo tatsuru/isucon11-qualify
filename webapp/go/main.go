@@ -1039,11 +1039,12 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 	var err error
 
 	if startTime.IsZero() {
-		query := "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ?" +
+		query := "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = :jiaIsuUUID" +
 			"	AND `timestamp` < :endTime" +
 			"   AND `condition_level` IN (:conditionLevels)" +
 			"	ORDER BY `timestamp` DESC"
 		input := map[string]interface{}{
+			"jiaIsuUUID":      jiaIsuUUID,
 			"endTime":         endTime,
 			"conditionLevels": conditionLevels,
 		}
@@ -1059,12 +1060,13 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 
 		err = db.Select(&conditions, query, args...)
 	} else {
-		query := "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ?" +
+		query := "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = :jiaIsuUUID" +
 			"	AND `timestamp` < :endTime" +
 			"	AND :startTime <= `timestamp`" +
 			"   AND `condition_level` IN (:conditionLevels)" +
 			"	ORDER BY `timestamp` DESC"
 		input := map[string]interface{}{
+			"jiaIsuUUID":      jiaIsuUUID,
 			"endTime":         endTime,
 			"startTime":       startTime,
 			"conditionLevels": conditionLevels,
