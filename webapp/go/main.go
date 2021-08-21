@@ -1076,7 +1076,7 @@ func calculateConditionLevel(condition string) (string, error) {
 var trendCache = []TrendResponse{}
 var trendCacheTTL = time.Now().Add(-1 * time.Hour)
 
-const trendCacheLifetimeDuration = 60 * time.Second
+const trendCacheLifetimeDuration = 1 * time.Second
 
 // GET /api/trend
 // ISUの性格毎の最新のコンディション情報
