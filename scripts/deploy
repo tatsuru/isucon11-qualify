@@ -9,7 +9,7 @@ branch=${1-main}
 go="GOROOT=/home/isucon/local/go PATH=$PATH:/home/isucon/local/go/bin/ go"
 
 command="cd /home/isucon/isucon11-qualify/webapp/go && git remote update && git checkout $branch && git pull && $go get && $go build -o isucondition && sudo systemctl restart isucondition.go.service"
-rotate_nginx="sudo mv /var/log/nginx/access.log /var/log/nginx/access.log.$now && sudo ln -sf /var/log/nginx/access.log.$now /var/log/nginx/access.log.latest; sudo systemctl reload nginx.service"
+rotate_nginx="sudo mv /var/log/nginx/access.log /var/log/nginx/access.log.$now && sudo ln -sf /var/log/nginx/access.log.$now /var/log/nginx/access.log.latest; sudo systemctl restart nginx.service"
 #rotate_mysql="sudo mv /var/log/mariadb/slow.log /var/log/mariadb/slow.log.$now && sudo ln -sf /var/log/mariadb/slow.log.$now /var/log/mariadb/slow.log.latest; mysqladmin -uisucon -pisucon flush-logs"
 
 ssh isucon@52.193.88.232 "$command" &
