@@ -84,10 +84,18 @@ type IsuCondition struct {
 	ID         int       `db:"id"`
 	JIAIsuUUID string    `db:"jia_isu_uuid"`
 	Timestamp  time.Time `db:"timestamp"`
-	IsSitting  bool      `db:"is_sitting"`
-	Condition  string    `db:"condition"`
-	Message    string    `db:"message"`
-	CreatedAt  time.Time `db:"created_at"`
+
+	IsSitting bool   `db:"is_sitting"`
+	Condition string `db:"condition"`
+
+	IsDirty      bool `db:"is_dirty"`
+	IsOverweight bool `db:"is_overweight"`
+	IsBroken     bool `db:"is_broken"`
+
+	ConditionLevel string `db:"condition_level"`
+
+	Message   string    `db:"message"`
+	CreatedAt time.Time `db:"created_at"`
 }
 
 type MySQLConnectionEnv struct {
@@ -318,6 +326,32 @@ func postInitialize(c echo.Context) error {
 	if err != nil {
 		c.Logger().Errorf("exec init.sh error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	allConditions := make([]IsuCondition, 0)
+	err = db.Select(allConditions, "SELECT * from `isu_condition`")
+	if err != nil {
+		c.Logger().Errorf("db error : %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	for _, cond := range allConditions {
+		cond.IsBroken = strings.Contains(cond.Condition, "is_broken=true")
+		cond.IsDirty = strings.Contains(cond.Condition, "is_dirty=true")
+		cond.IsOverweight = strings.Contains(cond.Condition, "is_overweight=true")
+
+		cond.ConditionLevel, err = calculateConditionLevel(cond.Condition)
+		if err != nil {
+			c.Logger().Errorf("ConditionLevel calc error: %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		_, err = db.Exec("UPDATE `isu_condition` SET `is_broken` = ?, `is_dirty` = ?, `is_overweight` = ?, `condition_level` = ?",
+			cond.IsBroken, cond.IsDirty, cond.IsOverweight, cond.ConditionLevel,
+		)
+		if err != nil {
+			c.Logger().Errorf("db error : %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
 	}
 
 	_, err = db.Exec(
