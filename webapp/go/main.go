@@ -346,7 +346,7 @@ func postInitialize(c echo.Context) error {
 		}
 
 		_, err = db.Exec("UPDATE `isu_condition` SET `is_broken` = ?, `is_dirty` = ?, `is_overweight` = ?, `condition_level` = ? WHERE `jia_isu_uuid` = ?",
-			&cond.IsBroken, &cond.IsDirty, &cond.IsOverweight, &cond.ConditionLevel, cond.JIAIsuUUID,
+			cond.IsBroken, cond.IsDirty, cond.IsOverweight, cond.ConditionLevel, cond.JIAIsuUUID,
 		)
 		if err != nil {
 			c.Logger().Errorf("db error : %v", err)
