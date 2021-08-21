@@ -302,6 +302,8 @@ func getJIAServiceURL(tx *sqlx.Tx) string {
 	return config.URL
 }
 
+var initializedAt = time.Time{}
+
 // POST /initialize
 // サービスを初期化
 func postInitialize(c echo.Context) error {
@@ -329,6 +331,8 @@ func postInitialize(c echo.Context) error {
 		c.Logger().Errorf("db error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	initializedAt = time.Now()
 
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
@@ -1083,7 +1087,7 @@ const trendCacheLifetimeDuration = 1 * time.Second
 func getTrend(c echo.Context) error {
 	res := []TrendResponse{}
 
-	if trendCacheTTL.Before(time.Now()) {
+	if initializedAt.After((time.Now().Add(15 * time.Second))) && trendCacheTTL.Before(time.Now()) {
 		res = trendCache
 	} else {
 		characterList := []Isu{}
