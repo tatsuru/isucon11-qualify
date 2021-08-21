@@ -330,7 +330,7 @@ func postInitialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	os.MkdirAll("/home/isucon/image", 755)
+	os.MkdirAll("/home/isucon/image", 0755)
 
 	defaultIconImage, err := ioutil.ReadFile(defaultIconFilePath)
 	if err != nil {
@@ -340,7 +340,7 @@ func postInitialize(c echo.Context) error {
 	allIsus := []Isu{}
 	err = db.Select(&allIsus, "SELECT * FROM `isu`")
 	for _, isu := range allIsus {
-		os.MkdirAll("/home/isucon/image/"+isu.JIAIsuUUID, 755)
+		os.MkdirAll("/home/isucon/image/"+isu.JIAIsuUUID, 0755)
 		if len(isu.Image) == 0 {
 			ioutil.WriteFile("/home/isucon/image/"+isu.JIAIsuUUID+"/icon", defaultIconImage, 0644)
 		} else {
@@ -624,7 +624,7 @@ func postIsu(c echo.Context) error {
 		}
 	}
 
-	os.MkdirAll("/home/isucon/image/"+jiaIsuUUID, 755)
+	os.MkdirAll("/home/isucon/image/"+jiaIsuUUID, 0755)
 	ioutil.WriteFile("/home/isucon/image/"+jiaIsuUUID+"/icon", image, 0644)
 
 	tx, err := db.Beginx()
