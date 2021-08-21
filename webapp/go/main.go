@@ -1235,11 +1235,17 @@ func postIsuCondition(c echo.Context) error {
 			return c.String(http.StatusBadRequest, "bad request body")
 		}
 
+		isBroken := strings.Contains(cond.Condition, "is_broken=true")
+		isDirty := strings.Contains(cond.Condition, "is_dirty=true")
+		isOverweight := strings.Contains(cond.Condition, "is_overweight=true")
+
+		conditionLevel, _ := calculateConditionLevel(cond.Condition)
+
 		_, err = tx.Exec(
 			"INSERT INTO `isu_condition`"+
-				"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`)"+
-				"	VALUES (?, ?, ?, ?, ?)",
-			jiaIsuUUID, timestamp, cond.IsSitting, cond.Condition, cond.Message)
+				"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`, `is_broken`, `is_dirty`, `is_overweight`, `condition_level`)"+
+				"	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			jiaIsuUUID, timestamp, cond.IsSitting, cond.Condition, cond.Message, isBroken, isDirty, isOverweight, conditionLevel)
 		if err != nil {
 			c.Logger().Errorf("db error: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
