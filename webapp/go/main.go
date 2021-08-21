@@ -332,11 +332,20 @@ func postInitialize(c echo.Context) error {
 
 	os.MkdirAll("/home/isucon/image", 755)
 
+	defaultIconImage, err := ioutil.ReadFile(defaultIconFilePath)
+	if err != nil {
+		c.Logger().Errorf("default icon read error : %v", err)
+	}
+
 	allIsus := []Isu{}
 	err = db.Select(&allIsus, "SELECT * FROM `isu`")
 	for _, isu := range allIsus {
 		os.MkdirAll("/home/isucon/image/"+isu.JIAIsuUUID, 755)
-		ioutil.WriteFile("/home/isucon/image/"+isu.JIAIsuUUID+"/icon", isu.Image, 0644)
+		if len(isu.Image) == 0 {
+			ioutil.WriteFile("/home/isucon/image/"+isu.JIAIsuUUID+"/icon", defaultIconImage, 0644)
+		} else {
+			ioutil.WriteFile("/home/isucon/image/"+isu.JIAIsuUUID+"/icon", isu.Image, 0644)
+		}
 	}
 
 	allConditions := []IsuCondition{}
@@ -737,7 +746,7 @@ func getIsuID(c echo.Context) error {
 // GET /api/isu/:jia_isu_uuid/icon
 // ISUのアイコンを取得
 func getIsuIcon(c echo.Context) error {
-	jiaUserID, errStatusCode, err := getUserIDFromSession(c)
+	_, errStatusCode, err := getUserIDFromSession(c)
 	if err != nil {
 		if errStatusCode == http.StatusUnauthorized {
 			return c.String(http.StatusUnauthorized, "you are not signed in")
@@ -750,8 +759,7 @@ func getIsuIcon(c echo.Context) error {
 	jiaIsuUUID := c.Param("jia_isu_uuid")
 
 	var image []byte
-	err = db.Get(&image, "SELECT `image` FROM `isu` WHERE `jia_user_id` = ? AND `jia_isu_uuid` = ?",
-		jiaUserID, jiaIsuUUID)
+	image, err = ioutil.ReadFile("/home/isucon/image/" + jiaIsuUUID + "/icon")
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.String(http.StatusNotFound, "not found: isu")
