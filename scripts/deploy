@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -v
+
+root=$(cd "$(dirname "$0")" && cd .. && pwd)
+now=$(date +%Y%m%d-%H%M%S)
+
+branch=${1-master}
+make="PATH=$PATH:/home/isucon/local/golang/bin/ make"
+
+update="cd /home/isucon/isucon10-final/webapp/golang && git remote update && git checkout $branch && git pull"
+build="cd /home/isucon/isucon10-final/webapp/golang && git remote update && git checkout $branch && $make"
+update_env="cp -v /home/isucon/isucon10-final/env /home/isucon/env"
+restart_app="sudo systemctl restart xsuportal-web-golang.service && sudo systemctl restart xsuportal-api-golang.service"
+update_envoy="sudo cp -v /home/isucon/isucon10-final/config/etc/envoy/config.yaml /etc/envoy/config.yaml"
+rotate_envoy="sudo mv /var/log/envoy/access.log.json /var/log/envoy/access.log.json.$now && sudo ln -sf /var/log/envoy/access.log.json.$now /var/log/envoy/access.log.json.latest"
+restart_envoy="sudo systemctl restart envoy.service"
+update_nginx="sudo cp -v /home/isucon/isucon10-final/config/etc/nginx/nginx.conf /etc/nginx/nginx.conf && sudo cp -v /home/isucon/isucon10-final/config/etc/nginx/sites-available/xsuportal.conf /etc/nginx/sites-available/xsuportal.conf"
+rotate_nginx="sudo mv /var/log/nginx/access.log /var/log/nginx/access.log.$now && sudo ln -sf /var/log/nginx/access.log.$now /var/log/nginx/access.log.latest"
+restart_nginx="sudo systemctl reload nginx.service"
+
+ssh isucon-server1 "$update && $build && $update_env && $restart_app && $update_nginx && $rotate_nginx && $restart_nginx" &
+ssh isucon-server2 "$update && $build && $update_env && $restart_app && $update_envoy && $rotate_envoy && $restart_envoy" &
+ssh isucon-server3 "$update && $update_env" &
+
+wait
