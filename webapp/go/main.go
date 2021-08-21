@@ -330,6 +330,15 @@ func postInitialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	os.MkdirAll("/home/isucon/image", 755)
+
+	allIsus := []Isu{}
+	err = db.Select(&allIsus, "SELECT * FROM `isu`")
+	for _, isu := range allIsus {
+		os.MkdirAll("/home/isucon/image/"+isu.JIAIsuUUID, 755)
+		ioutil.WriteFile("/home/isucon/image/"+isu.JIAIsuUUID+"/icon", isu.Image, 0644)
+	}
+
 	allConditions := []IsuCondition{}
 	err = db.Select(&allConditions, "SELECT * from `isu_condition`")
 	if err != nil {
@@ -606,6 +615,9 @@ func postIsu(c echo.Context) error {
 		}
 	}
 
+	os.MkdirAll("/home/isucon/image/"+jiaIsuUUID, 755)
+	ioutil.WriteFile("/home/isucon/image/"+jiaIsuUUID+"/icon", image, 0644)
+
 	tx, err := db.Beginx()
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
@@ -614,8 +626,8 @@ func postIsu(c echo.Context) error {
 	defer tx.Rollback()
 
 	_, err = tx.Exec("INSERT INTO `isu`"+
-		"	(`jia_isu_uuid`, `name`, `image`, `jia_user_id`) VALUES (?, ?, ?, ?)",
-		jiaIsuUUID, isuName, image, jiaUserID)
+		"	(`jia_isu_uuid`, `name`, `jia_user_id`) VALUES (?, ?, ?)",
+		jiaIsuUUID, isuName, jiaUserID)
 	if err != nil {
 		mysqlErr, ok := err.(*mysql.MySQLError)
 
