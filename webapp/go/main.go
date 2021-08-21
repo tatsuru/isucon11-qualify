@@ -997,11 +997,7 @@ func getIsuConditions(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "missing: condition_level")
 	}
 
-	levels := make([]string, 0, 3)
-	for _, level := range strings.Split(conditionLevelCSV, ",") {
-		levels = append(levels, "\""+level+"\"")
-	}
-	levelsIn := "(" + strings.Join(levels, ",") + ")"
+	levels := strings.Split(conditionLevelCSV, ",")
 
 	startTimeStr := c.QueryParam("start_time")
 	var startTime time.Time
@@ -1027,7 +1023,7 @@ func getIsuConditions(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	conditionsResponse, err := getIsuConditionsFromDB(db, jiaIsuUUID, endTime, levelsIn, startTime, conditionLimit, isuName)
+	conditionsResponse, err := getIsuConditionsFromDB(db, jiaIsuUUID, endTime, levels, startTime, conditionLimit, isuName)
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -1036,29 +1032,54 @@ func getIsuConditions(c echo.Context) error {
 }
 
 // ISUのコンディションをDBから取得
-func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, conditionLevelsInString string, startTime time.Time,
+func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, conditionLevels []string, startTime time.Time,
 	limit int, isuName string) ([]*GetIsuConditionResponse, error) {
 
 	conditions := []IsuCondition{}
 	var err error
 
 	if startTime.IsZero() {
-		err = db.Select(&conditions,
-			"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ?"+
-				"	AND `timestamp` < ?"+
-				"   AND `condition_level` IN ?"+
-				"	ORDER BY `timestamp` DESC",
-			jiaIsuUUID, endTime, conditionLevelsInString,
-		)
+		query := "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ?" +
+			"	AND `timestamp` < :endTime" +
+			"   AND `condition_level` IN (:conditionLevels)" +
+			"	ORDER BY `timestamp` DESC"
+		input := map[string]interface{}{
+			"endTime":         endTime,
+			"conditionLevels": conditionLevels,
+		}
+		query, args, err := sqlx.Named(query, input)
+		if err != nil {
+			return nil, fmt.Errorf("db error: %v", err)
+		}
+		query, args, err = sqlx.In(query, args...)
+		if err != nil {
+			return nil, fmt.Errorf("db error: %v", err)
+		}
+		query = db.Rebind(query)
+
+		err = db.Select(&conditions, query, args...)
 	} else {
-		err = db.Select(&conditions,
-			"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ?"+
-				"	AND `timestamp` < ?"+
-				"	AND ? <= `timestamp`"+
-				"   AND `condition_level` IN ?"+
-				"	ORDER BY `timestamp` DESC",
-			jiaIsuUUID, endTime, startTime, conditionLevelsInString,
-		)
+		query := "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ?" +
+			"	AND `timestamp` < :endTime" +
+			"	AND :startTime <= `timestamp`" +
+			"   AND `condition_level` IN (:conditionLevels)" +
+			"	ORDER BY `timestamp` DESC"
+		input := map[string]interface{}{
+			"endTime":         endTime,
+			"startTime":       startTime,
+			"conditionLevels": conditionLevels,
+		}
+		query, args, err := sqlx.Named(query, input)
+		if err != nil {
+			return nil, fmt.Errorf("db error: %v", err)
+		}
+		query, args, err = sqlx.In(query, args...)
+		if err != nil {
+			return nil, fmt.Errorf("db error: %v", err)
+		}
+		query = db.Rebind(query)
+
+		err = db.Select(&conditions, query, args...)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("db error: %v", err)
