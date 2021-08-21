@@ -338,8 +338,8 @@ func postInitialize(c echo.Context) error {
 		isBroken := strings.Contains(cond.Condition, "is_broken=true")
 		isDirty := strings.Contains(cond.Condition, "is_dirty=true")
 		isOverweight := strings.Contains(cond.Condition, "is_overweight=true")
-		conditionLevel, err := calculateConditionLevel(cond.Condition)
 
+		conditionLevel, err := calculateConditionLevel(cond.Condition)
 		if err != nil {
 			c.Logger().Errorf("ConditionLevel calc error: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
