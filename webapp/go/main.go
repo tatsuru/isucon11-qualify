@@ -1168,7 +1168,7 @@ const trendCacheLifetimeDuration = 1 * time.Second
 func getTrend(c echo.Context) error {
 	res := []TrendResponse{}
 
-	if initializedAt.After((time.Now().Add(15 * time.Second))) && trendCacheTTL.Before(time.Now()) {
+	if initializedAt.Add(15*time.Second).After(time.Now()) && trendCacheTTL.Before(time.Now()) {
 		res = trendCache
 	} else {
 		characterList := []Isu{}
