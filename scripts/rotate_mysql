@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -v
+
+root=$(cd "$(dirname "$0")" && cd .. && pwd)
+now=$(date +%Y%m%d-%H%M%S)
+
+rotate_mysql="sudo mv /var/log/mysql/mariadb-slow.log /var/log/mysql/mariadb-slow.log.$now && sudo ln -sf /var/log/mysql/mariadb-slow.log.$now /var/log/mysql/mariadb-slow.log.latest; mysql -uisucon -pisucon -e 'flush slow logs;'"
+
+ssh isucon@52.193.88.232 "$rotate_mysql"
+
