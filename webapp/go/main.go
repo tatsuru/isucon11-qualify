@@ -335,18 +335,18 @@ func postInitialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	for _, cond := range allConditions {
-		*cond.IsBroken = strings.Contains(cond.Condition, "is_broken=true")
-		*cond.IsDirty = strings.Contains(cond.Condition, "is_dirty=true")
-		*cond.IsOverweight = strings.Contains(cond.Condition, "is_overweight=true")
+		isBroken := strings.Contains(cond.Condition, "is_broken=true")
+		isDirty := strings.Contains(cond.Condition, "is_dirty=true")
+		isOverweight := strings.Contains(cond.Condition, "is_overweight=true")
+		conditionLevel, err := calculateConditionLevel(cond.Condition)
 
-		*cond.ConditionLevel, err = calculateConditionLevel(cond.Condition)
 		if err != nil {
 			c.Logger().Errorf("ConditionLevel calc error: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
 		_, err = db.Exec("UPDATE `isu_condition` SET `is_broken` = ?, `is_dirty` = ?, `is_overweight` = ?, `condition_level` = ? WHERE `jia_isu_uuid` = ?",
-			cond.IsBroken, cond.IsDirty, cond.IsOverweight, cond.ConditionLevel, cond.JIAIsuUUID,
+			isBroken, isDirty, isOverweight, conditionLevel, cond.JIAIsuUUID,
 		)
 		if err != nil {
 			c.Logger().Errorf("db error : %v", err)
