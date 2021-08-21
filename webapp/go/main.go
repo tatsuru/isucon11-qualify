@@ -79,6 +79,7 @@ type IsuWithLastCondition struct {
 	CreatedAt  time.Time `db:"created_at" json:"-"`
 	UpdatedAt  time.Time `db:"updated_at" json:"-"`
 
+	LastConditionId *int `db:"last_condition_id" json:"-"`
 
 	LastConditionTimestamp time.Time `db:"last_condition_timestamp" json:"-"`
 	LastConditionLevel     string    `db:"last_condition_level" json:"-"`
