@@ -328,8 +328,8 @@ func postInitialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	allConditions := make([]IsuCondition, 0)
-	err = db.Select(allConditions, "SELECT * from `isu_condition`")
+	allConditions := []IsuCondition{}
+	err = db.Select(&allConditions, "SELECT * from `isu_condition`")
 	if err != nil {
 		c.Logger().Errorf("db error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
