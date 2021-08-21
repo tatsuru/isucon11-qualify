@@ -1023,7 +1023,7 @@ func getIsuConditions(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	conditionsResponse, err := getIsuConditionsFromDB(db, jiaIsuUUID, endTime, levels, startTime, conditionLimit, isuName)
+	conditionsResponse, err := getIsuConditionsFromDB(c, db, jiaIsuUUID, endTime, levels, startTime, conditionLimit, isuName)
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -1032,7 +1032,7 @@ func getIsuConditions(c echo.Context) error {
 }
 
 // ISUのコンディションをDBから取得
-func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, conditionLevels []string, startTime time.Time,
+func getIsuConditionsFromDB(c echo.Context, db *sqlx.DB, jiaIsuUUID string, endTime time.Time, conditionLevels []string, startTime time.Time,
 	limit int, isuName string) ([]*GetIsuConditionResponse, error) {
 
 	conditions := []IsuCondition{}
@@ -1057,6 +1057,7 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 			return nil, fmt.Errorf("db error: %v", err)
 		}
 		query = db.Rebind(query)
+		c.Logger().Warnf("getIsuConditionsFromDB query: %s, args: %#v", query, args)
 
 		err = db.Select(&conditions, query, args...)
 	} else {
@@ -1080,6 +1081,7 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 			return nil, fmt.Errorf("db error: %v", err)
 		}
 		query = db.Rebind(query)
+		c.Logger().Warnf("getIsuConditionsFromDB query: %s, args: %#v", query, args)
 
 		err = db.Select(&conditions, query, args...)
 	}
