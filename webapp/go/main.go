@@ -58,6 +58,18 @@ type Config struct {
 }
 
 type Isu struct {
+	ID              int       `db:"id" json:"id"`
+	JIAIsuUUID      string    `db:"jia_isu_uuid" json:"jia_isu_uuid"`
+	Name            string    `db:"name" json:"name"`
+	Image           []byte    `db:"image" json:"-"`
+	Character       string    `db:"character" json:"character"`
+	JIAUserID       string    `db:"jia_user_id" json:"-"`
+	CreatedAt       time.Time `db:"created_at" json:"-"`
+	UpdatedAt       time.Time `db:"updated_at" json:"-"`
+	LastConditionId *int      `db:"last_condition_id" json:"-"`
+}
+
+type IsuWithLastCondition struct {
 	ID         int       `db:"id" json:"id"`
 	JIAIsuUUID string    `db:"jia_isu_uuid" json:"jia_isu_uuid"`
 	Name       string    `db:"name" json:"name"`
@@ -66,6 +78,9 @@ type Isu struct {
 	JIAUserID  string    `db:"jia_user_id" json:"-"`
 	CreatedAt  time.Time `db:"created_at" json:"-"`
 	UpdatedAt  time.Time `db:"updated_at" json:"-"`
+
+	LastConditionTimestamp time.Time `db:"last_condition_timestamp" json:"-"`
+	LastConditionLevel     string    `db:"last_condition_level" json:"-"`
 }
 
 type IsuFromJIA struct {
@@ -346,6 +361,11 @@ func postInitialize(c echo.Context) error {
 		} else {
 			ioutil.WriteFile("/home/isucon/image/"+isu.JIAIsuUUID+"/icon", isu.Image, 0644)
 		}
+
+		var lastCondition IsuCondition
+		err = db.Get(&lastCondition, "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY `timestamp` DESC LIMIT 1",
+			isu.JIAIsuUUID)
+		db.Exec("UPDATE `isu` SET `last_condition_id` = ? WHERE `id` = ?", lastCondition.ID, isu.ID)
 	}
 
 	allConditions := []IsuCondition{}
@@ -1251,9 +1271,9 @@ func getTrend(c echo.Context) error {
 		}
 
 		for _, character := range characterList {
-			isuList := []Isu{}
+			isuList := []IsuWithLastCondition{}
 			err = db.Select(&isuList,
-				"SELECT * FROM `isu` WHERE `character` = ?",
+				"SELECT `isu`.*, `isu_condition`.`timestamp` as `last_condition_timestamp`, `isu_condition`.`condition_level` as `last_condition_level` FROM `isu` INNER JOIN `isu_condition` ON `isu`.`last_condition_id` = `isu_condition`.`id` WHERE `character` = ?",
 				character.Character,
 			)
 			if err != nil {
@@ -1264,36 +1284,25 @@ func getTrend(c echo.Context) error {
 			characterInfoIsuConditions := []*TrendCondition{}
 			characterWarningIsuConditions := []*TrendCondition{}
 			characterCriticalIsuConditions := []*TrendCondition{}
+
 			for _, isu := range isuList {
-				conditions := []IsuCondition{}
-				err = db.Select(&conditions,
-					"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY timestamp DESC",
-					isu.JIAIsuUUID,
-				)
-				if err != nil {
-					c.Logger().Errorf("db error: %v", err)
-					return c.NoContent(http.StatusInternalServerError)
+				isuLastCondition := IsuCondition{
+					Timestamp:      isu.LastConditionTimestamp,
+					ConditionLevel: &isu.LastConditionLevel,
 				}
 
-				if len(conditions) > 0 {
-					isuLastCondition := conditions[0]
-					conditionLevel, err := calculateConditionLevel(isuLastCondition.Condition)
-					if err != nil {
-						c.Logger().Error(err)
-						return c.NoContent(http.StatusInternalServerError)
-					}
-					trendCondition := TrendCondition{
-						ID:        isu.ID,
-						Timestamp: isuLastCondition.Timestamp.Unix(),
-					}
-					switch conditionLevel {
-					case "info":
-						characterInfoIsuConditions = append(characterInfoIsuConditions, &trendCondition)
-					case "warning":
-						characterWarningIsuConditions = append(characterWarningIsuConditions, &trendCondition)
-					case "critical":
-						characterCriticalIsuConditions = append(characterCriticalIsuConditions, &trendCondition)
-					}
+				trendCondition := TrendCondition{
+					ID:        isu.ID,
+					Timestamp: isuLastCondition.Timestamp.Unix(),
+				}
+				condLevel := *isuLastCondition.ConditionLevel
+				switch condLevel {
+				case "info":
+					characterInfoIsuConditions = append(characterInfoIsuConditions, &trendCondition)
+				case "warning":
+					characterWarningIsuConditions = append(characterWarningIsuConditions, &trendCondition)
+				case "critical":
+					characterCriticalIsuConditions = append(characterCriticalIsuConditions, &trendCondition)
 				}
 
 			}
@@ -1375,7 +1384,7 @@ func postIsuCondition(c echo.Context) error {
 
 		conditionLevel, _ := calculateConditionLevel(cond.Condition)
 
-		_, err = tx.Exec(
+		res, err := tx.Exec(
 			"INSERT INTO `isu_condition`"+
 				"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`, `is_broken`, `is_dirty`, `is_overweight`, `condition_level`)"+
 				"	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -1385,6 +1394,13 @@ func postIsuCondition(c echo.Context) error {
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
+		lastConditionId, err := res.LastInsertId()
+		if err != nil {
+			c.Logger().Errorf("db error: %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		db.Exec("UPDATE `isu` SET `last_condition_id` = ? WHERE `jia_isu_uuid` = ?", lastConditionId, jiaIsuUUID)
 	}
 
 	err = tx.Commit()
