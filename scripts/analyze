@@ -6,6 +6,7 @@ root=$(cd "$(dirname "$0")" && cd .. && pwd)
 
 command='sudo cat /var/log/nginx/access.log | alp ltsv -r --sort=sum -m "/api/isu/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$,/api/isu/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/icon,/api/condition/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$,/isu/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$,/isu/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/condition,/isu/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/graph"'
 
-# isucon1
 ssh -t isucon@52.193.88.232 "$command"
+ssh -t isucon@52.193.135.152 "$command"
+ssh -t isucon@35.75.239.4 "$command"
 
