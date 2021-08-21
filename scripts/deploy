@@ -17,5 +17,7 @@ ssh isucon@52.193.135.152 "$command" &
 ssh isucon@35.75.239.4 "$command" &
 
 ssh isucon@52.193.88.232 "$rotate_nginx" &
+ssh isucon@52.193.135.152 "$rotate_nginx" &
+ssh isucon@35.75.239.4 "$rotate_nginx" &
 
 wait
