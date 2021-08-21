@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -e
+
+root=$(cd "$(dirname "$0")" && cd .. && pwd)
+
+analyze_envoy='cat /var/log/envoy/access.log.json | alp json -r --sort=sum -m "/api/contestant/benchmark_jobs/[0-9]+,/api/admin/clarifications/[0-9]+,/api/admin/clarifications/[0-9]+"'
+analyze_nginx='cat /var/log/nginx/access.log | alp ltsv -r --sort=sum -m "/api/contestant/benchmark_jobs/[0-9]+,/api/admin/clarifications/[0-9]+,/api/admin/clarifications/[0-9]+"'
+
+ssh -t isucon-server1 "$analyze_nginx"
