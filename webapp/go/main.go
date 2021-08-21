@@ -88,11 +88,11 @@ type IsuCondition struct {
 	IsSitting bool   `db:"is_sitting"`
 	Condition string `db:"condition"`
 
-	IsDirty      bool `db:"is_dirty"`
-	IsOverweight bool `db:"is_overweight"`
-	IsBroken     bool `db:"is_broken"`
+	IsDirty      *bool `db:"is_dirty"`
+	IsOverweight *bool `db:"is_overweight"`
+	IsBroken     *bool `db:"is_broken"`
 
-	ConditionLevel string `db:"condition_level"`
+	ConditionLevel *string `db:"condition_level"`
 
 	Message   string    `db:"message"`
 	CreatedAt time.Time `db:"created_at"`
